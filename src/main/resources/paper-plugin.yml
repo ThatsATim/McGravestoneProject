@@ -1,0 +1,4 @@
+name: Gravestone
+version: '${project.version}'
+main: be.thatsatim.gravestone.Gravestone
+api-version: '1.20'
