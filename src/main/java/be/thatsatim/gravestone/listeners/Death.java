@@ -2,6 +2,8 @@ package be.thatsatim.gravestone.listeners;
 
 import be.thatsatim.gravestone.Gravestone;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
@@ -13,15 +15,19 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
-import be.thatsatim.gravestone.utils.Location;
+import be.thatsatim.gravestone.utils.LocationChecker;
+
+import java.util.Base64;
 
 public class Death implements Listener {
 
+    private final Gravestone plugin;
     FileConfiguration config;
 
     public Death(Gravestone plugin) {
-        Bukkit.getPluginManager().registerEvents(this, plugin);
+        this.plugin = plugin;
         config = plugin.getConfig();
+        Bukkit.getPluginManager().registerEvents(this, plugin);
     }
 
     @EventHandler
@@ -33,10 +39,10 @@ public class Death implements Listener {
         ItemStack cursor = player.getItemOnCursor();
         player.setItemOnCursor(null);
         event.getDrops().clear();
-        org.bukkit.Location playerLocation = player.getLocation();
+        Location playerLocation = player.getLocation();
 
         // Check if the location is safe!
-        Location.getSafe(playerLocation);
+        LocationChecker.getSafe(playerLocation);
 
         // Spawn the chest
         Block block = playerLocation.getBlock();

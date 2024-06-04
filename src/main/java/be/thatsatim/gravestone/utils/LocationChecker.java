@@ -2,7 +2,7 @@ package be.thatsatim.gravestone.utils;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 
-public class Location {
+public class LocationChecker {
 
     public static void getSafe(org.bukkit.Location location) {
         if (isSafe(location)) {return;}

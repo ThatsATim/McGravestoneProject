@@ -1,55 +1,18 @@
 package be.thatsatim.gravestone.utils;
 
-import be.thatsatim.gravestone.Gravestone;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.command.ConsoleCommandSender;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
 import java.util.Base64;
 
-public class Inventory {
+public class ItemSerializer {
 
-    private final Gravestone plugin;
-
-    public Inventory(Gravestone plugin) {
-        this.plugin = plugin;
-    }
-
-    private void saveInventory(PlayerInventory playerInventory, Player player) {
-        FileConfiguration config = this.plugin.getConfig();
-
-        // Serialize inventory to Base64
-        String serializedInventory = serializeInventory(playerInventory);
-
-        // Save to config
-        config.set(getStaffInventoryKey(player), serializedInventory);
-        this.plugin.saveConfig();
-
-        playerInventory.clear();
-    }
-
-    // Get the inventory for use in the gravestone
-    private void getInventory(Player player) {
-        FileConfiguration config = this.plugin.getConfig();
-
-        if (config.contains(getStaffInventoryKey(player))) {
-            // Read from config
-            String serializedInventory = config.getString(getStaffInventoryKey(player));
-
-            // Deserialize and restore inventory
-            deserialize(serializedInventory, 0);
-            return;
-        }
-        Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "&4GRAVESTONE: NO SAVED INVENTORY FOUND!");
-    }
-
-    // Serialize an inventory to a String.
+    // Serialize an ItemStack to a String.
     private String serializeInventory(PlayerInventory playerInventory) {
         StringBuilder serialized = new StringBuilder();
+
         for (ItemStack item : playerInventory.getContents()) {
             if (item != null) {
                 // Serialize each item to Base64
@@ -59,10 +22,11 @@ public class Inventory {
             }
             serialized.append("null;");
         }
+
         return serialized.toString();
     }
 
-    // Deserialize a String back into an inventory
+    // Deserialize a String back into an ItemStack
     private ItemStack[] deserialize(String serializedInventory, int tries) {
         try {
             String[] serializedItems = serializedInventory.split(";");
@@ -76,8 +40,6 @@ public class Inventory {
                     inventoryContents[i] = ItemStack.deserializeBytes(serializedData);
                 }
             }
-
-            // Send the Inventory back
             return inventoryContents;
 
         } catch (Exception e) {
@@ -89,4 +51,5 @@ public class Inventory {
         }
         return null;
     }
+
 }
