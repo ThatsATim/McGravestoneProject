@@ -10,7 +10,7 @@ import java.util.Base64;
 public class ItemSerializer {
 
     // Serialize an ItemStack to a String.
-    private String serializeInventory(PlayerInventory playerInventory) {
+    public static String serializeInventory(PlayerInventory playerInventory) {
         StringBuilder serialized = new StringBuilder();
 
         for (ItemStack item : playerInventory.getContents()) {
@@ -27,7 +27,7 @@ public class ItemSerializer {
     }
 
     // Deserialize a String back into an ItemStack
-    private ItemStack[] deserialize(String serializedInventory, int tries) {
+    public ItemStack[] deserialize(String serializedInventory, int tries) {
         try {
             String[] serializedItems = serializedInventory.split(";");
             ItemStack[] inventoryContents = new ItemStack[serializedItems.length];
@@ -42,7 +42,7 @@ public class ItemSerializer {
             }
             return inventoryContents;
 
-        } catch (Exception e) {
+        } catch (Exception exception) {
             if (tries > 10) {
                 Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "&4GRAVESTONE: ERROR WHILE DE-SERIALISING INVENTORY!");
                 return null;

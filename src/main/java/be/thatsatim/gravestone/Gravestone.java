@@ -20,7 +20,7 @@ public final class Gravestone extends JavaPlugin {
             if (!getDataFolder().exists()) {
                 getDataFolder().mkdirs();
             }
-            gravestoneDatabase = new GravestoneDatabase(getDataFolder().getAbsolutePath() + "/gravestone.db");
+            gravestoneDatabase = new GravestoneDatabase(this);
         } catch (SQLException exception) {
             exception.printStackTrace();
             System.out.println("Failed to connect to the database! " + exception.getMessage());

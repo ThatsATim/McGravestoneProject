@@ -1,8 +1,8 @@
 package be.thatsatim.gravestone.listeners;
 
 import be.thatsatim.gravestone.Gravestone;
+import be.thatsatim.gravestone.database.GravestoneDatabase;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -17,7 +17,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import be.thatsatim.gravestone.utils.LocationChecker;
 
-import java.util.Base64;
+import java.sql.SQLException;
 
 public class Death implements Listener {
 
@@ -43,6 +43,28 @@ public class Death implements Listener {
 
         // Check if the location is safe!
         LocationChecker.getSafe(playerLocation);
+
+        try {
+            GravestoneDatabase.addGravestone(playerLocation, player, playerInventory);
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+            System.out.println("Failed to create the database entry! " + exception.getMessage());
+        }
+
+        try {
+            GravestoneDatabase.getGravestone(playerLocation);
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+            System.out.println("Failed to get the database entry! " + exception.getMessage());
+        }
+
+        try {
+            GravestoneDatabase.deleteGravestone(playerLocation);
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+            System.out.println("Failed to delete the database entry! " + exception.getMessage());
+        }
+
 
         // Spawn the chest
         Block block = playerLocation.getBlock();
