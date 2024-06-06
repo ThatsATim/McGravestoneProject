@@ -68,6 +68,7 @@ public class GravestoneDatabase {
 
         try(PreparedStatement preparedStatement = connection.prepareStatement("DELETE FROM graves WHERE location = ?")) {
             preparedStatement.setString(1, locationString);
+            preparedStatement.executeUpdate();
         }
     }
 
