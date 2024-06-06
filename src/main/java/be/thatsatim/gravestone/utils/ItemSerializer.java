@@ -9,11 +9,39 @@ import java.util.Base64;
 
 public class ItemSerializer {
 
-    // Serialize an ItemStack to a String.
-    public static String serializeInventory(PlayerInventory playerInventory) {
+    public static String serializeItem(ItemStack item) {
         StringBuilder serialized = new StringBuilder();
 
-        for (ItemStack item : playerInventory.getContents()) {
+        String serializedItem = Base64.getEncoder().encodeToString(item.serializeAsBytes());
+        serialized.append(serializedItem).append(";");
+        return serialized.toString();
+    }
+
+    public static ItemStack deserializeItem(String serializedItem, int tries) {
+        try {
+            ItemStack item;
+            if (!serializedItem.contains("null")) {
+                // Deserialize the item from Base64
+                byte[] serializedData = Base64.getDecoder().decode(serializedItem);
+                item = ItemStack.deserializeBytes(serializedData);
+                return item;
+            }
+        } catch (Exception exception) {
+            if (tries > 10) {
+                Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "GRAVESTONE: ERROR WHILE DE-SERIALISING ITEM!");
+                return null;
+            }
+            deserializeInventory(serializedItem, tries + 1);
+        }
+        return null;
+    }
+
+
+    // Serialize an ItemStack to a String.
+    public static String serializeInventory(PlayerInventory items) {
+        StringBuilder serialized = new StringBuilder();
+
+        for (ItemStack item : items.getContents()) {
             if (item != null) {
                 // Serialize each item to Base64
                 String serializedItem = Base64.getEncoder().encodeToString(item.serializeAsBytes());
@@ -27,7 +55,7 @@ public class ItemSerializer {
     }
 
     // Deserialize a String back into an ItemStack
-    public ItemStack[] deserialize(String serializedInventory, int tries) {
+    public static ItemStack[] deserializeInventory(String serializedInventory, int tries) {
         try {
             String[] serializedItems = serializedInventory.split(";");
             ItemStack[] inventoryContents = new ItemStack[serializedItems.length];
@@ -44,10 +72,10 @@ public class ItemSerializer {
 
         } catch (Exception exception) {
             if (tries > 10) {
-                Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "&4GRAVESTONE: ERROR WHILE DE-SERIALISING INVENTORY!");
+                Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "GRAVESTONE: ERROR WHILE DE-SERIALISING INVENTORY!");
                 return null;
             }
-            deserialize(serializedInventory, tries + 1);
+            deserializeInventory(serializedInventory, tries + 1);
         }
         return null;
     }
