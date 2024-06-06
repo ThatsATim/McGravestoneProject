@@ -3,23 +3,18 @@ package be.thatsatim.gravestone.database;
 import be.thatsatim.gravestone.Gravestone;
 import be.thatsatim.gravestone.utils.ItemSerializer;
 import be.thatsatim.gravestone.utils.StringLocationConvertor;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.PlayerInventory;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 
 public class GravestoneDatabase {
 
     private static Connection connection;
-    private static String path;
 
     public GravestoneDatabase(Gravestone plugin) throws SQLException {
-        path = plugin.getDataFolder().getAbsolutePath() + "/gravestone.db";
+        String path = plugin.getDataFolder().getAbsolutePath() + "/gravestone.db";
         connection = DriverManager.getConnection("jdbc:sqlite:" + path);
 
         try(Statement statement = connection.createStatement()) {
@@ -35,46 +30,44 @@ public class GravestoneDatabase {
     }
 
     public static void addGravestone(Location location, Player player, PlayerInventory playerInventory) throws SQLException {
-        connection = DriverManager.getConnection("jdbc:sqlite:" + path);
-
-        String inventory = ItemSerializer.serializeInventory(playerInventory);
         String locationString = StringLocationConvertor.locationToString(location);
         String playerName = player.getName();
         String UUID = String.valueOf(player.getUniqueId());
+        String inventory = ItemSerializer.serializeInventory(playerInventory);
 
-        try(Statement statement = connection.createStatement()) {
-            statement.execute("""
-                INSERT INTO graves (location, username, uuid, inventoryContents)
-                VALUES
-                """ + "('" + locationString + "', '" + playerName + "', '" + UUID + "', '" + inventory + "');"
-            );
+        try(PreparedStatement preparedStatement = connection.prepareStatement(
+                "INSERT INTO graves (location, username, uuid, inventoryContents) VALUES (?, ?, ?, ?)"
+        )) {
+            preparedStatement.setString(1, locationString);
+            preparedStatement.setString(2, playerName);
+            preparedStatement.setString(3, UUID);
+            preparedStatement.setString(4, inventory);
+            preparedStatement.executeUpdate();
         }
 
     }
 
-    public static void getGravestone(Location location) throws SQLException {
-        connection = DriverManager.getConnection("jdbc:sqlite:" + path);
-
+    public static String[] getGravestone(Location location) throws SQLException {
         String locationString = StringLocationConvertor.locationToString(location);
 
-        try(Statement statement = connection.createStatement()) {
-            statement.execute("""
-                SELECT * FROM graves WHERE location =
-                """ + " '" + locationString + "';"
-            );
+        try(PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM graves WHERE location = ?")) {
+            preparedStatement.setString(1, locationString);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if (resultSet.next()) {
+                return new String[] {
+                        resultSet.getString("uuid"),
+                        resultSet.getString("inventoryContents")
+                };
+            }
+            return null;
         }
     }
 
     public static void deleteGravestone(Location location) throws SQLException {
-        connection = DriverManager.getConnection("jdbc:sqlite:" + path);
-
         String locationString = StringLocationConvertor.locationToString(location);
 
-        try(Statement statement = connection.createStatement()) {
-            statement.execute("""
-                DELETE FROM graves WHERE location =
-                """ + " '" + locationString + "';"
-            );
+        try(PreparedStatement preparedStatement = connection.prepareStatement("DELETE FROM graves WHERE location = ?")) {
+            preparedStatement.setString(1, locationString);
         }
     }
 
