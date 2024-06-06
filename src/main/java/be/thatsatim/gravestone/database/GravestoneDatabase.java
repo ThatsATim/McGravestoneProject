@@ -59,7 +59,6 @@ public class GravestoneDatabase {
 
     public static String[] getGravestone(Location location) throws SQLException {
         String locationString = StringLocationConvertor.locationToString(location);
-        Bukkit.broadcastMessage("Location " + locationString);
 
         try(PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM graves WHERE location = ?")) {
             preparedStatement.setString(1, locationString);

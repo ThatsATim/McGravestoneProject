@@ -24,25 +24,29 @@ public class RightClick implements Listener {
 
     @EventHandler
     public void onRightClick(PlayerInteractEvent event) {
+        Action action = event.getAction();
 
-        event.setCancelled(true);
+        if (!action.equals(Action.RIGHT_CLICK_BLOCK)) {
+            return;
+        }
+
         Block block = event.getClickedBlock();
         Location location = block.getLocation();
-        event.setCancelled(false);
         Player player = event.getPlayer();
-        Action action = event.getAction();
         ItemStack[] inventory;
 
-        if (action.equals(Action.RIGHT_CLICK_BLOCK) && block.getType().equals(Material.STONE_STAIRS)) {
-            try {
-                String[] values = GravestoneDatabase.getGravestone(location);
-                String DatabaseInventory = values[1];
-                inventory = ItemSerializer.deserializeInventory(DatabaseInventory, 0);
-                player.getInventory().setContents(inventory);
-            } catch (SQLException exception) {
-                exception.printStackTrace();
-                System.out.println("Failed to get the database entry! " + exception.getMessage());
-            }
+        if (!block.getType().equals(Material.STONE_STAIRS)) {
+            return;
+        }
+
+        try {
+            String[] values = GravestoneDatabase.getGravestone(location);
+            String DatabaseInventory = values[1];
+            inventory = ItemSerializer.deserializeInventory(DatabaseInventory, 0);
+            player.getInventory().setContents(inventory);
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+            System.out.println("Failed to get the database entry! " + exception.getMessage());
         }
 
 
