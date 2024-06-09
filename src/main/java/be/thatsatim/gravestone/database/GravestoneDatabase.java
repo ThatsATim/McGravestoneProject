@@ -4,10 +4,8 @@ import be.thatsatim.gravestone.Gravestone;
 import be.thatsatim.gravestone.utils.ItemSerializer;
 import be.thatsatim.gravestone.utils.StringLocationConvertor;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.PlayerInventory;
 
 import java.sql.*;
 
@@ -19,60 +17,46 @@ public class GravestoneDatabase {
         String path = plugin.getDataFolder().getAbsolutePath() + "/gravestone.db";
         connection = DriverManager.getConnection("jdbc:sqlite:" + path);
 
-        try(Statement statement = connection.createStatement()) {
+        try (Statement statement = connection.createStatement()) {
             statement.execute("""
-                CREATE TABLE IF NOT EXISTS graves (
-                location TEXT PRIMARY KEY,
-                username TEXT,
-                uuid TEXT,
-                inventoryContents TEXT,
-                cursorItem TEXT);
-            """);
+                        CREATE TABLE IF NOT EXISTS graves (
+                        location TEXT PRIMARY KEY,
+                        username TEXT,
+                        uuid TEXT,
+                        inventoryContents TEXT);
+                    """);
         }
 
     }
 
-    public static void addGravestone(Location location, Player player, PlayerInventory playerInventory, ItemStack cursorItem) throws SQLException {
+    public static void addGravestone(Location location, Player player, ItemStack[] gravestoneInventory) throws SQLException {
         String locationString = StringLocationConvertor.locationToString(location);
         String playerName = player.getName();
         String UUID = String.valueOf(player.getUniqueId());
-        String inventory = ItemSerializer.serializeInventory(playerInventory);
-        String cursor = "null;";
+        String inventory = ItemSerializer.serializeInventory(gravestoneInventory);
 
-        if (!(cursorItem.getType().equals(Material.AIR))) {
-            cursor = ItemSerializer.serializeItem(cursorItem);
-        }
-
-        try(PreparedStatement preparedStatement = connection.prepareStatement(
-                "INSERT INTO graves (location, username, uuid, inventoryContents, cursorItem) VALUES (?, ?, ?, ?, ?)"
+        try (PreparedStatement preparedStatement = connection.prepareStatement(
+                "INSERT INTO graves (location, username, uuid, inventoryContents) VALUES (?, ?, ?, ?)"
         )) {
             preparedStatement.setString(1, locationString);
             preparedStatement.setString(2, playerName);
             preparedStatement.setString(3, UUID);
             preparedStatement.setString(4, inventory);
-            preparedStatement.setString(5, cursor);
             preparedStatement.executeUpdate();
         }
 
     }
 
-    public static void updateGravestone(PlayerInventory playerInventory, ItemStack cursorItem, Location location) throws SQLException {
+    public static void updateGravestone(ItemStack[] gravestoneInventory, Location location) throws SQLException {
 
         String locationString = StringLocationConvertor.locationToString(location);
+        String inventory = ItemSerializer.serializeInventory(gravestoneInventory);
 
-        String inventory = ItemSerializer.serializeInventory(playerInventory);
-        String cursor = "null;";
-
-        if (!(cursorItem.getType().equals(Material.AIR))) {
-            cursor = ItemSerializer.serializeItem(cursorItem);
-        }
-
-        try(PreparedStatement preparedStatement = connection.prepareStatement(
-                "UPDATE graves SET inventoryContents = ?, cursorItem = ? WHERE location = ?;"
+        try (PreparedStatement preparedStatement = connection.prepareStatement(
+                "UPDATE graves SET inventoryContents = ? WHERE location = ?;"
         )) {
             preparedStatement.setString(1, inventory);
-            preparedStatement.setString(2, cursor);
-            preparedStatement.setString(3, locationString);
+            preparedStatement.setString(2, locationString);
             preparedStatement.executeUpdate();
         }
 
@@ -81,17 +65,17 @@ public class GravestoneDatabase {
     public static String[] getGravestone(Location location) throws SQLException {
         String locationString = StringLocationConvertor.locationToString(location);
 
-        try(PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM graves WHERE location = ?")) {
+        try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM graves WHERE location = ?")) {
             preparedStatement.setString(1, locationString);
             ResultSet resultSet = preparedStatement.executeQuery();
-            return new String[] {resultSet.getString("uuid"), resultSet.getString("inventoryContents"), resultSet.getString("cursorItem")};
+            return new String[]{resultSet.getString("uuid"), resultSet.getString("inventoryContents")};
         }
     }
 
     public static void deleteGravestone(Location location) throws SQLException {
         String locationString = StringLocationConvertor.locationToString(location);
 
-        try(PreparedStatement preparedStatement = connection.prepareStatement("DELETE FROM graves WHERE location = ?")) {
+        try (PreparedStatement preparedStatement = connection.prepareStatement("DELETE FROM graves WHERE location = ?")) {
             preparedStatement.setString(1, locationString);
             preparedStatement.executeUpdate();
         }

@@ -1,10 +1,7 @@
 package be.thatsatim.gravestone;
 
 import be.thatsatim.gravestone.database.GravestoneDatabase;
-import be.thatsatim.gravestone.listeners.BreakBlock;
-import be.thatsatim.gravestone.listeners.Death;
-import be.thatsatim.gravestone.listeners.GuiClose;
-import be.thatsatim.gravestone.listeners.RightClick;
+import be.thatsatim.gravestone.listeners.*;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -21,6 +18,8 @@ public final class Gravestone extends JavaPlugin {
         new RightClick(this);
         new BreakBlock(this);
         new GuiClose(this);
+        new InventoryClick(this);
+        new InventoryDrag(this);
 
         try {
             if (!getDataFolder().exists()) {

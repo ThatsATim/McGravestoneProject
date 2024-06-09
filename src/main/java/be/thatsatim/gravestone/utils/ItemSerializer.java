@@ -2,6 +2,7 @@ package be.thatsatim.gravestone.utils;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
@@ -12,8 +13,13 @@ public class ItemSerializer {
     public static String serializeItem(ItemStack item) {
         StringBuilder serialized = new StringBuilder();
 
-        String serializedItem = Base64.getEncoder().encodeToString(item.serializeAsBytes());
-        serialized.append(serializedItem);
+        if (item != null) {
+            String serializedItem = Base64.getEncoder().encodeToString(item.serializeAsBytes());
+            serialized.append(serializedItem);
+        } else {
+            serialized.append("null;");
+        }
+
         return serialized.toString();
     }
 
@@ -33,15 +39,15 @@ public class ItemSerializer {
             }
             deserializeInventory(serializedItem, tries + 1);
         }
-        return null;
+        return new ItemStack(Material.AIR);
     }
 
 
     // Serialize an ItemStack to a String.
-    public static String serializeInventory(PlayerInventory items) {
+    public static String serializeInventory(ItemStack[] items) {
         StringBuilder serialized = new StringBuilder();
 
-        for (ItemStack item : items.getContents()) {
+        for (ItemStack item : items) {
             if (item != null) {
                 // Serialize each item to Base64
                 String serializedItem = Base64.getEncoder().encodeToString(item.serializeAsBytes());
