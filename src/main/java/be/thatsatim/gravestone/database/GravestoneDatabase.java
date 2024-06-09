@@ -3,7 +3,6 @@ package be.thatsatim.gravestone.database;
 import be.thatsatim.gravestone.Gravestone;
 import be.thatsatim.gravestone.utils.ItemSerializer;
 import be.thatsatim.gravestone.utils.StringLocationConvertor;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -52,6 +51,28 @@ public class GravestoneDatabase {
             preparedStatement.setString(3, UUID);
             preparedStatement.setString(4, inventory);
             preparedStatement.setString(5, cursor);
+            preparedStatement.executeUpdate();
+        }
+
+    }
+
+    public static void updateGravestone(PlayerInventory playerInventory, ItemStack cursorItem, Location location) throws SQLException {
+
+        String locationString = StringLocationConvertor.locationToString(location);
+
+        String inventory = ItemSerializer.serializeInventory(playerInventory);
+        String cursor = "null;";
+
+        if (!(cursorItem.getType().equals(Material.AIR))) {
+            cursor = ItemSerializer.serializeItem(cursorItem);
+        }
+
+        try(PreparedStatement preparedStatement = connection.prepareStatement(
+                "UPDATE graves SET inventoryContents = ?, cursorItem = ? WHERE location = ?;"
+        )) {
+            preparedStatement.setString(1, inventory);
+            preparedStatement.setString(2, cursor);
+            preparedStatement.setString(3, locationString);
             preparedStatement.executeUpdate();
         }
 

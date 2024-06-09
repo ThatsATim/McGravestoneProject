@@ -13,7 +13,7 @@ public class ItemSerializer {
         StringBuilder serialized = new StringBuilder();
 
         String serializedItem = Base64.getEncoder().encodeToString(item.serializeAsBytes());
-        serialized.append(serializedItem).append(";");
+        serialized.append(serializedItem);
         return serialized.toString();
     }
 
@@ -73,7 +73,7 @@ public class ItemSerializer {
         } catch (Exception exception) {
             if (tries > 10) {
                 Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "GRAVESTONE: ERROR WHILE DE-SERIALISING INVENTORY!");
-                return null;
+                return new ItemStack[0];
             }
             deserializeInventory(serializedInventory, tries + 1);
         }
