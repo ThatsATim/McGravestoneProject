@@ -29,26 +29,28 @@ public class RightClick implements Listener {
     public void onRightClick(PlayerInteractEvent event) {
         Action action = event.getAction();
 
-        if (!action.equals(Action.RIGHT_CLICK_BLOCK)) {
-            return;
-        }
+        if (!action.equals(Action.RIGHT_CLICK_BLOCK)) { return; }
 
         Block block = event.getClickedBlock();
         Location location = block.getLocation();
         Player player = event.getPlayer();
         ItemStack[] inventory;
 
-        if (!block.getType().equals(Material.STONE_STAIRS)) {
-            return;
-        }
+        if (!block.getType().equals(Material.STONE_STAIRS)) { return; }
 
         try {
             String[] values = GravestoneDatabase.getGravestone(location);
 
-            String DatabaseInventory = values[1];
+            // UUID and player related logic
             String graveOwnerString = values[0];
             Player graveOwnerPlayer = Bukkit.getPlayer(UUID.fromString(graveOwnerString));
             String graveOwnerName = graveOwnerPlayer.getName();
+
+            // Permission logic
+            if (player != graveOwnerPlayer && !player.hasPermission("MapleGrave.Staff")) { return; }
+
+            // Inventory logic
+            String DatabaseInventory = values[1];
             inventory = ItemSerializer.deserializeInventory(DatabaseInventory, 0);
 
             if (Memory.checkForGravestone(location)) { return; }
@@ -65,9 +67,7 @@ public class RightClick implements Listener {
 
     private void openGui(Player player, ItemStack[] items, String graveOwnerName) {
         Inventory gravestoneInventory = Bukkit.createInventory(player, 54, graveOwnerName + "'s gravestone");
-
         gravestoneInventory.setContents(items);
-
         player.openInventory(gravestoneInventory);
     }
 
