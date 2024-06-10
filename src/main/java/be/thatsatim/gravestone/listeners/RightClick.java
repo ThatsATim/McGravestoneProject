@@ -17,6 +17,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import java.sql.SQLException;
+import java.util.UUID;
 
 public class RightClick implements Listener {
 
@@ -45,11 +46,15 @@ public class RightClick implements Listener {
             String[] values = GravestoneDatabase.getGravestone(location);
 
             String DatabaseInventory = values[1];
+            String graveOwnerString = values[0];
+            Player graveOwnerPlayer = Bukkit.getPlayer(UUID.fromString(graveOwnerString));
+            String graveOwnerName = graveOwnerPlayer.getName();
             inventory = ItemSerializer.deserializeInventory(DatabaseInventory, 0);
 
-            Memory.openGravestone(player, location);
+            if (Memory.checkForGravestone(location)) { return; }
 
-            openGui(player, inventory);
+            Memory.openGravestone(player, location);
+            openGui(player, inventory, graveOwnerName);
 
         } catch (SQLException exception) {
             exception.printStackTrace();
@@ -58,9 +63,8 @@ public class RightClick implements Listener {
 
     }
 
-    private void openGui(Player player, ItemStack[] items) {
-        String name = player.getDisplayName() + "'s gravestone";
-        Inventory gravestoneInventory = Bukkit.createInventory(player, 54, name);
+    private void openGui(Player player, ItemStack[] items, String graveOwnerName) {
+        Inventory gravestoneInventory = Bukkit.createInventory(player, 54, graveOwnerName + "'s gravestone");
 
         gravestoneInventory.setContents(items);
 

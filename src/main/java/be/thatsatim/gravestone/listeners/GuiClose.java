@@ -30,7 +30,6 @@ public class GuiClose implements Listener {
         }
 
         ItemStack[] gravestoneInventory = event.getInventory().getContents();
-        Location location = Memory.closeGravestone((Player) event.getPlayer());
 
         // TODO Cut feature for release, more time needed
 //        try {
@@ -55,6 +54,11 @@ public class GuiClose implements Listener {
 //        } catch (SQLException exception) {
 //            Bukkit.getLogger().warning("Whelp, an error happened: " + exception.getMessage());
 //        }
+
+
+        Player player = (Player) event.getPlayer();
+        Location location = Memory.getGravestoneLocation(player);
+        Memory.closeGravestone(player, location);
 
         boolean isEmpty = true;
         for (ItemStack item : gravestoneInventory) {

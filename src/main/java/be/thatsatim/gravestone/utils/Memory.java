@@ -11,6 +11,10 @@ public class Memory {
 
     public static void openGravestone(Player player, Location location) { openGravestones.put(player, location); }
 
-    public static Location closeGravestone(Player player) { return openGravestones.get(player); }
+    public static boolean checkForGravestone(Location location) { return openGravestones.containsValue(location); }
+
+    public static void closeGravestone(Player player, Location location) { openGravestones.remove(player,location); }
+
+    public static Location getGravestoneLocation(Player player) { return openGravestones.get(player); }
 
 }
