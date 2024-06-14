@@ -2,6 +2,7 @@ package be.thatsatim.gravestone.listeners;
 
 import be.thatsatim.gravestone.Gravestone;
 import be.thatsatim.gravestone.database.GravestoneDatabase;
+import be.thatsatim.gravestone.utils.Memory;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -23,9 +24,10 @@ public class BreakBlock implements Listener {
         Block block = event.getBlock();
         Location location = block.getLocation();
 
-        if (block.getType().equals(Material.STONE_STAIRS)) {
+        if (block.getType().equals(Material.MOSSY_STONE_BRICK_STAIRS)) {
             try {
                 GravestoneDatabase.deleteGravestone(location);
+                Memory.deleteGravestone(location);
             } catch (SQLException exception) {
                 exception.printStackTrace();
                 System.out.println("Failed to delete the database entry! " + exception.getMessage());

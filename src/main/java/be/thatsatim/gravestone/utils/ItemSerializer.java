@@ -2,47 +2,11 @@ package be.thatsatim.gravestone.utils;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.PlayerInventory;
 
 import java.util.Base64;
 
 public class ItemSerializer {
-
-    public static String serializeItem(ItemStack item) {
-        StringBuilder serialized = new StringBuilder();
-
-        if (item != null) {
-            String serializedItem = Base64.getEncoder().encodeToString(item.serializeAsBytes());
-            serialized.append(serializedItem);
-        } else {
-            serialized.append("null;");
-        }
-
-        return serialized.toString();
-    }
-
-    public static ItemStack deserializeItem(String serializedItem, int tries) {
-        try {
-            ItemStack item;
-            if (!serializedItem.contains("null")) {
-                // Deserialize the item from Base64
-                byte[] serializedData = Base64.getDecoder().decode(serializedItem);
-                item = ItemStack.deserializeBytes(serializedData);
-                return item;
-            }
-        } catch (Exception exception) {
-            if (tries > 10) {
-                Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "GRAVESTONE: ERROR WHILE DE-SERIALISING ITEM!");
-                return null;
-            }
-            deserializeInventory(serializedItem, tries + 1);
-        }
-        return new ItemStack(Material.AIR);
-    }
-
-
     // Serialize an ItemStack to a String.
     public static String serializeInventory(ItemStack[] items) {
         StringBuilder serialized = new StringBuilder();

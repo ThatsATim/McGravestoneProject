@@ -3,10 +3,13 @@ package be.thatsatim.gravestone.listeners;
 import be.thatsatim.gravestone.Gravestone;
 import be.thatsatim.gravestone.database.GravestoneDatabase;
 import be.thatsatim.gravestone.utils.LocationChecker;
+import be.thatsatim.gravestone.utils.Memory;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.type.Stairs;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -14,6 +17,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.util.Vector;
 
 import java.sql.SQLException;
 
@@ -41,12 +45,17 @@ public class Death implements Listener {
 
         // Spawn the tombstone
         Block block = playerLocation.getBlock();
-        block.setType(Material.STONE_STAIRS);
+        block.setType(Material.MOSSY_STONE_BRICK_STAIRS);
+
+        Stairs stairs = (Stairs) block.getBlockData();
+        stairs.setFacing(getDirection(player));
+        block.setBlockData(stairs);
 
         Location location = block.getLocation();
 
         try {
             GravestoneDatabase.addGravestone(location, player, gravestoneInventory);
+            Memory.addGravestone(location);
         } catch (SQLException exception) {
             exception.printStackTrace();
             System.out.println("Failed to create the database entry! " + exception.getMessage());
@@ -113,6 +122,24 @@ public class Death implements Listener {
         chestInventory.setItem(53, items[8]);
 
         return chestInventory.getContents();
+    }
+
+    private BlockFace getDirection(Player player) {
+        Vector direction = player.getLocation().getDirection();
+        double x = direction.getX();
+        double z = direction.getZ();
+
+        if (Math.abs(x) > Math.abs(z)) {
+            if (x > 0) {
+                return BlockFace.WEST;
+            }
+            return BlockFace.EAST;
+        }
+
+        if (z > 0) {
+            return BlockFace.NORTH;
+        }
+        return BlockFace.SOUTH;
     }
 
 }

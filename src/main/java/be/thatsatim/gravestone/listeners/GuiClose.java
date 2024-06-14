@@ -73,6 +73,7 @@ public class GuiClose implements Listener {
             try {
                 GravestoneDatabase.deleteGravestone(location);
                 location.getBlock().setType(Material.AIR);
+                Memory.deleteGravestone(location);
             } catch (SQLException exception) {
                 exception.printStackTrace();
                 System.out.println("Failed to delete the database entry! " + exception.getMessage());

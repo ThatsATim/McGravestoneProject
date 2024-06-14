@@ -36,7 +36,9 @@ public class RightClick implements Listener {
         Player player = event.getPlayer();
         ItemStack[] inventory;
 
-        if (!block.getType().equals(Material.STONE_STAIRS)) { return; }
+        if (!block.getType().equals(Material.MOSSY_STONE_BRICK_STAIRS)) { return; }
+
+        if (!Memory.getGravestone(location)) { return; }
 
         try {
             String[] values = GravestoneDatabase.getGravestone(location);
