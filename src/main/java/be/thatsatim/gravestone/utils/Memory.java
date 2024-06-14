@@ -1,5 +1,6 @@
 package be.thatsatim.gravestone.utils;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
@@ -24,7 +25,10 @@ public class Memory {
     // Keeps track of all the gravestones in existence
     private static final List<Location> gravestones = new ArrayList<>();
 
-    public static void addGravestone(Location location) { gravestones.add(location); }
+    public static void addGravestone(Location location) {
+        Bukkit.broadcastMessage("Gravestone added at " + location.toString());
+        gravestones.add(location);
+    }
 
     public static boolean getGravestone(Location location) { return findGravestone(location) >= 0; }
 

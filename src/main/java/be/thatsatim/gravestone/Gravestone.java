@@ -26,6 +26,7 @@ public final class Gravestone extends JavaPlugin {
                 getDataFolder().mkdirs();
             }
             gravestoneDatabase = new GravestoneDatabase(this);
+            GravestoneDatabase.initGravestonesCache();
         } catch (SQLException exception) {
             exception.printStackTrace();
             System.out.println("Failed to connect to the database! " + exception.getMessage());

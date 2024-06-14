@@ -2,6 +2,7 @@ package be.thatsatim.gravestone.database;
 
 import be.thatsatim.gravestone.Gravestone;
 import be.thatsatim.gravestone.utils.ItemSerializer;
+import be.thatsatim.gravestone.utils.Memory;
 import be.thatsatim.gravestone.utils.StringLocationConvertor;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -84,6 +85,17 @@ public class GravestoneDatabase {
     public void closeConnection() throws SQLException {
         if (connection != null && !connection.isClosed()) {
             connection.close();
+        }
+    }
+
+    public static void initGravestonesCache() throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            ResultSet resultSet = statement.executeQuery("SELECT * FROM graves");
+            while (resultSet.next()) {
+                String locationString = resultSet.getString("location");
+                Location location = StringLocationConvertor.stringToLocation(locationString);
+                Memory.addGravestone(location);
+            }
         }
     }
 }
