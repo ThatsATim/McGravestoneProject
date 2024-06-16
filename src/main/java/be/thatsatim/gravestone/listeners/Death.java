@@ -4,6 +4,10 @@ import be.thatsatim.gravestone.Gravestone;
 import be.thatsatim.gravestone.database.GravestoneDatabase;
 import be.thatsatim.gravestone.utils.LocationChecker;
 import be.thatsatim.gravestone.utils.Memory;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -18,6 +22,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.util.Vector;
+import net.kyori.adventure.text.event.ClickEvent;
 
 import java.sql.SQLException;
 
@@ -56,6 +61,18 @@ public class Death implements Listener {
         try {
             GravestoneDatabase.addGravestone(location, player, gravestoneInventory);
             Memory.addGravestone(location);
+
+            Component message = Component.text()
+                .append(Component.text("You died! You can retrieve your gravestone at ", NamedTextColor.RED))
+                .append(Component.text(location.getBlockX() + " " + location.getBlockY() + " " + location.getBlockZ() + ".", NamedTextColor.YELLOW, TextDecoration.BOLD))
+                .append(Component.newline())
+                .append(Component.text("Or you can pay to get it delivered, by clicking ", NamedTextColor.GREEN))
+                .append(Component.text("here", NamedTextColor.BLUE, TextDecoration.UNDERLINED)
+                    .clickEvent(ClickEvent.runCommand("/retrieve-gravestone " + location.getWorld().getName() + " " + location.getBlockX() + " " + location.getBlockY() + " " + location.getBlockZ())))
+                .append(Component.text("!", NamedTextColor.GREEN))
+                .build();
+
+            player.sendMessage(message);
         } catch (SQLException exception) {
             exception.printStackTrace();
             System.out.println("Failed to create the database entry! " + exception.getMessage());
