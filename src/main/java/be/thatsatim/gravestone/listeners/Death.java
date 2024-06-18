@@ -63,13 +63,13 @@ public class Death implements Listener {
             Memory.addGravestone(location);
 
             Component message = Component.text()
-                .append(Component.text("You died! You can retrieve your gravestone at ", NamedTextColor.RED))
-                .append(Component.text(location.getBlockX() + " " + location.getBlockY() + " " + location.getBlockZ() + ".", NamedTextColor.YELLOW, TextDecoration.BOLD))
+                .append(Component.text("You died! You can retrieve your gravestone at ", NamedTextColor.GRAY))
+                .append(Component.text("X: "+location.getBlockX() + ", Y: " + location.getBlockY() + ", Z: " + location.getBlockZ() + ".", NamedTextColor.DARK_GRAY))
                 .append(Component.newline())
-                .append(Component.text("Or you can pay to get it delivered, by clicking ", NamedTextColor.GREEN))
-                .append(Component.text("here", NamedTextColor.BLUE, TextDecoration.UNDERLINED)
+                .append(Component.text("Or you can pay to get it delivered, by clicking ", NamedTextColor.GRAY))
+                .append(Component.text("here", NamedTextColor.GREEN)
                     .clickEvent(ClickEvent.runCommand("/retrieve-gravestone " + location.getWorld().getName() + " " + location.getBlockX() + " " + location.getBlockY() + " " + location.getBlockZ())))
-                .append(Component.text("!", NamedTextColor.GREEN))
+                .append(Component.text("!", NamedTextColor.GRAY))
                 .build();
 
             player.sendMessage(message);

@@ -43,7 +43,8 @@ public class RetrieveGraveStoneCommand implements Command<CommandSourceStack> {
                 .then(RequiredArgumentBuilder.<CommandSourceStack, String>argument("z", StringArgumentType.string())
                 .executes(new RetrieveGraveStoneCommand())
                 .then(RequiredArgumentBuilder.<CommandSourceStack, String>argument("confirm", StringArgumentType.string())
-                .executes(new RetrieveGraveStoneCommand()))))));
+                .then(RequiredArgumentBuilder.<CommandSourceStack, String>argument("price", StringArgumentType.string())
+                .executes(new RetrieveGraveStoneCommand())))))));
 
         commands.register(
             commandBuilder.build(),
@@ -54,112 +55,125 @@ public class RetrieveGraveStoneCommand implements Command<CommandSourceStack> {
 
     @Override
     public int run(CommandContext<CommandSourceStack> context) {
-        CommandSourceStack source = context.getSource();
-
-        Entity entity = source.getExecutor();
-
-        if (!(entity instanceof Player)) {
-            return 0;
-        }
-
-        Player player = (Player) entity;
-        Location location = entity.getLocation();
-
-        String world = context.getArgument("world", String.class);
-        String x = context.getArgument("x", String.class);
-        String y = context.getArgument("y", String.class);
-        String z = context.getArgument("z", String.class);
-
-        boolean confirm = false;
-        if (context.getNodes().size() > 5) {
-            String confirmArg = context.getArgument("confirm", String.class);
-            confirm = "confirm".equalsIgnoreCase(confirmArg);
-        }
-
-        // Retrieve gravestone at x, y, z
-        Location gravestoneLocation = new Location(Bukkit.getWorld(world), Double.parseDouble(x), Double.parseDouble(y), Double.parseDouble(z));
-
-        String[] values = null;
         try {
-            values = GravestoneDatabase.getGravestone(gravestoneLocation);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+            CommandSourceStack source = context.getSource();
 
-        if (values == null) {
-            player.sendMessage("No gravestone found at " + x + " " + y + " " + z);
-            return 0;
-        }
+            Entity entity = source.getExecutor();
 
-        // Calculate the distance between the player and the gravestone
-        double distance = location.distance(gravestoneLocation);
-        player.sendMessage("Distance: " + distance);
+            if (!(entity instanceof Player)) {
+                return 0;
+            }
 
-        // Get cost of retrieving the gravestone every 100 blocks
-        int cost100xBlocks = 3;
+            Player player = (Player) entity;
+            Location location = entity.getLocation();
 
-        // Calculate the cost of retrieving the gravestone
-        int cost = (int) Math.ceil(distance / 100) * cost100xBlocks;
+            String world = context.getArgument("world", String.class);
+            String x = context.getArgument("x", String.class);
+            String y = context.getArgument("y", String.class);
+            String z = context.getArgument("z", String.class);
 
-        // Check if the player has enough money
-        if (economy != null && economy.getBalance(player) < cost) {
-            player.sendMessage("You do not have enough money to retrieve this gravestone. Cost: " + cost);
-            return 0;
-        }
+            boolean confirm = false;
+            try {
+                String confirmArg = context.getArgument("confirm", String.class);
+                confirm = confirmArg.equals("confirm");
+            } catch (IllegalArgumentException e) { }
 
-        // Check if the player has confirmed the retrieval
-        if (!confirm) {
-            Component message = Component.text()
-                .append(Component.text("Retrieving the gravestone will cost you ", NamedTextColor.GRAY))
-                .append(Component.text(cost, NamedTextColor.DARK_GRAY, TextDecoration.BOLD))
-                .append(Component.text(" tokens. ", NamedTextColor.GRAY))
-                .append(Component.newline())
-                .append(Component.text("Click ", NamedTextColor.GRAY))
-                .append(Component.text("here", NamedTextColor.BLUE, TextDecoration.UNDERLINED)
-                    .clickEvent(ClickEvent.runCommand("/retrieve-gravestone " + location.getWorld().getName() + " " + location.getBlockX() + " " + location.getBlockY() + " " + location.getBlockZ() + " confirm")))
-                .append(Component.text(" to CONFIRM the retrieve of your items.", NamedTextColor.GREEN))
-                .build();
+            // Retrieve gravestone at x, y, z
+            Location gravestoneLocation = new Location(Bukkit.getWorld(world), Double.parseDouble(x), Double.parseDouble(y), Double.parseDouble(z));
 
-            player.sendMessage(message);
-            return 0;
-        }
+            String[] values = null;
+            try {
+                values = GravestoneDatabase.getGravestone(gravestoneLocation);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
 
-        // UUID and player related logic
-        String graveOwnerString = values[0];
-        Player graveOwnerPlayer = Bukkit.getPlayer(UUID.fromString(graveOwnerString));
+            if (values == null) {
+                player.sendMessage("No gravestone found at " + x + " " + y + " " + z);
+                return 0;
+            }
 
-        // Permission logic
-        if (player != graveOwnerPlayer && !player.hasPermission("MapleGrave.Staff")) {
-            player.sendMessage("You do not have permission to retrieve this gravestone.");
-            return 0;
-        }
+            // Calculate the distance between the player and the gravestone
+            double distance = location.distance(gravestoneLocation);
 
-        // Inventory logic
-        String DatabaseInventory = values[1];
-        ItemStack[] inventory = ItemSerializer.deserializeInventory(DatabaseInventory, 0);
+            // Get cost of retrieving the gravestone every 100 blocks
+            int cost100xBlocks = 3;
 
-        // Drop the inventory
-        if (inventory != null) {
-            for (ItemStack item : inventory) {
-                if (item != null) {
-                    location.getWorld().dropItemNaturally(location, item);
+            // Calculate the cost of retrieving the gravestone
+            int cost = (int) Math.ceil(distance / 100) * cost100xBlocks;
+
+            // Check if the player has enough money
+            if (economy != null && economy.getBalance(player) < cost || economy == null) {
+                player.sendMessage("You do not have enough money to retrieve this gravestone. Cost: " + cost);
+                return 0;
+            }
+
+            // Check if the player has confirmed the retrieval
+            if (!confirm) {
+                Component message = Component.text()
+                    .append(Component.text("Retrieving the gravestone will cost you ", NamedTextColor.GRAY))
+                    .append(Component.text(cost, NamedTextColor.DARK_GRAY, TextDecoration.BOLD))
+                    .append(Component.text(" tokens. ", NamedTextColor.GRAY))
+                    .append(Component.newline())
+                    .append(Component.text("Click ", NamedTextColor.GRAY))
+                    .append(Component.text("here", NamedTextColor.GREEN)
+                        .clickEvent(ClickEvent.runCommand("/retrieve-gravestone " + world + " " + x + " " + y + " " + z + " confirm " + cost)))
+                    .append(Component.text(" to CONFIRM the retrieve of your items.", NamedTextColor.GRAY))
+                    .build();
+
+                player.sendMessage(message);
+                return 0;
+            }
+
+            int price = 0;
+            try {
+                String priceArg = context.getArgument("price", String.class);
+                price = Integer.parseInt(priceArg);
+            } catch (IllegalArgumentException e) { }
+
+            if (price != cost) {
+                player.sendMessage("The price you entered is incorrect. Please try again.");
+                return 0;
+            }
+
+            // UUID and player related logic
+            String graveOwnerString = values[0];
+            Player graveOwnerPlayer = Bukkit.getPlayer(UUID.fromString(graveOwnerString));
+
+            // Permission logic
+            if (player != graveOwnerPlayer && !player.hasPermission("MapleGrave.Staff")) {
+                player.sendMessage("You do not have permission to retrieve this gravestone.");
+                return 0;
+            }
+
+            // Inventory logic
+            String DatabaseInventory = values[1];
+            ItemStack[] inventory = ItemSerializer.deserializeInventory(DatabaseInventory, 0);
+
+            // Drop the inventory
+            if (inventory != null) {
+                for (ItemStack item : inventory) {
+                    if (item != null) {
+                        location.getWorld().dropItemNaturally(location, item);
+                    }
                 }
             }
+
+            try {
+                GravestoneDatabase.deleteGravestone(gravestoneLocation);
+                Memory.deleteGravestone(gravestoneLocation);
+                // Remove the gravestone block
+                gravestoneLocation.getBlock().setType(Material.AIR);
+                economy.withdrawPlayer(player, cost);
+            } catch (SQLException exception) {
+                exception.printStackTrace();
+                System.out.println("Failed to delete the database entry! " + exception.getMessage());
+            }
+
+            return Command.SINGLE_SUCCESS;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
         }
-
-        try {
-            GravestoneDatabase.deleteGravestone(gravestoneLocation);
-            Memory.deleteGravestone(gravestoneLocation);
-            // Remove the gravestone block
-            gravestoneLocation.getBlock().setType(Material.AIR);
-            economy.withdrawPlayer(player, cost);
-        } catch (SQLException exception) {
-            exception.printStackTrace();
-            System.out.println("Failed to delete the database entry! " + exception.getMessage());
-        }
-
-        entity.sendMessage("You are a player. " + x + " " + y + " " + z);
-
-        return Command.SINGLE_SUCCESS;
     }
 }
