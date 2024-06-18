@@ -1,13 +1,14 @@
 package be.thatsatim.gravestone;
 
+import org.bukkit.Bukkit;
+import org.bukkit.plugin.Plugin;
 import be.thatsatim.gravestone.commands.RetrieveGraveStoneCommand;
 import be.thatsatim.gravestone.database.GravestoneDatabase;
 import be.thatsatim.gravestone.listeners.*;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.LifecycleEventManager;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
-import org.bukkit.Bukkit;
-import org.bukkit.plugin.Plugin;
+
 import org.bukkit.plugin.java.JavaPlugin;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -25,7 +26,7 @@ public final class Gravestone extends JavaPlugin {
 
         // Setup Vault
         if (!setupEconomy()) {
-            getLogger().severe("Vault not found or Economy not supported! Disabling plugin.");
+            getLogger().severe("Vault or an economy plugin is not installed!");
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
