@@ -28,6 +28,8 @@ import org.bukkit.scheduler.BukkitTask;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 public class RetrieveGraveStoneCommand implements Command<CommandSourceStack> {
     // Import Economy from Vault
@@ -70,11 +72,6 @@ public class RetrieveGraveStoneCommand implements Command<CommandSourceStack> {
 
             Player player = (Player) entity;
             Location location = entity.getLocation();
-            startAnimation(location);
-
-            if (true) {
-                return 0;
-            }
 
             String world = context.getArgument("world", String.class);
             String x = context.getArgument("x", String.class);
@@ -99,6 +96,16 @@ public class RetrieveGraveStoneCommand implements Command<CommandSourceStack> {
 
             if (values == null) {
                 player.sendMessage("No gravestone found at " + x + " " + y + " " + z);
+                return 0;
+            }
+
+            // UUID and player related logic
+            String graveOwnerString = values[0];
+            Player graveOwnerPlayer = Bukkit.getPlayer(UUID.fromString(graveOwnerString));
+
+            // Permission logic
+            if (player != graveOwnerPlayer && !player.hasPermission("MapleGrave.Staff")) {
+                player.sendMessage("You do not have permission to retrieve this gravestone.");
                 return 0;
             }
 
@@ -145,39 +152,21 @@ public class RetrieveGraveStoneCommand implements Command<CommandSourceStack> {
                 return 0;
             }
 
-            // UUID and player related logic
-            String graveOwnerString = values[0];
-            Player graveOwnerPlayer = Bukkit.getPlayer(UUID.fromString(graveOwnerString));
-
-            // Permission logic
-            if (player != graveOwnerPlayer && !player.hasPermission("MapleGrave.Staff")) {
-                player.sendMessage("You do not have permission to retrieve this gravestone.");
-                return 0;
-            }
-
             // Inventory logic
             String DatabaseInventory = values[1];
             ItemStack[] inventory = ItemSerializer.deserializeInventory(DatabaseInventory, 0);
 
-            // Drop the inventory
-            if (inventory != null) {
-                for (ItemStack item : inventory) {
-                    if (item != null) {
-                        location.getWorld().dropItemNaturally(location, item);
-                    }
+            // Run your async function
+            runAsync(() -> {
+                try {
+                    // Start animation asynchronously and wait for it to complete
+                    startAnimation(location).get();
+                    runEnd(player, location, gravestoneLocation, inventory, cost).get();
+                } catch (Exception e) {
+                    runEnd(player, location, gravestoneLocation, inventory, cost);
+                    e.printStackTrace();
                 }
-            }
-
-            try {
-                GravestoneDatabase.deleteGravestone(gravestoneLocation);
-                Memory.deleteGravestone(gravestoneLocation);
-                // Remove the gravestone block
-                gravestoneLocation.getBlock().setType(Material.AIR);
-                economy.withdrawPlayer(player, cost);
-            } catch (SQLException exception) {
-                exception.printStackTrace();
-                System.out.println("Failed to delete the database entry! " + exception.getMessage());
-            }
+            });
 
             return Command.SINGLE_SUCCESS;
         } catch (Exception e) {
@@ -186,62 +175,162 @@ public class RetrieveGraveStoneCommand implements Command<CommandSourceStack> {
         }
     }
 
-    private void startAnimation(Location playerLocation) {
-        Bukkit.broadcastMessage("Starting animation");
+    private CompletableFuture<Void> runEnd(Player player, Location location, Location gravestoneLocation, ItemStack[] inventory, int cost) {
+        return CompletableFuture.runAsync(() -> {
+            // Run synchronous Bukkit tasks
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    // Drop the inventory
+                    if (inventory != null) {
+                        for (ItemStack item : inventory) {
+                            if (item != null) {
+                                location.getWorld().dropItemNaturally(location, item);
+                            }
+                        }
+                    }
+                }
+            }.runTask(plugin);
 
-        // Spawn a creeper 100 blocks in front of the player and 10 blocks above the player location in the direction the player is facing
-        Location spawnLocation = playerLocation.clone().add(playerLocation.getDirection().multiply(100));
-        spawnLocation.setY(playerLocation.getY() + 10);
+            try {
+                GravestoneDatabase.deleteGravestone(gravestoneLocation);
+                Memory.deleteGravestone(gravestoneLocation);
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        // Remove the gravestone block
+                        gravestoneLocation.getBlock().setType(Material.AIR);
+                        economy.withdrawPlayer(player, cost);
+                    }
+                }.runTask(plugin);
+            } catch (SQLException exception) {
+                exception.printStackTrace();
+                System.out.println("Failed to delete the database entry! " + exception.getMessage());
+            }
+        });
+    }
 
-        Creeper creeper = (Creeper) playerLocation.getWorld().spawnEntity(spawnLocation, EntityType.CREEPER);
-        creeper.setCustomName("Flying Creeper");
-        creeper.setCustomNameVisible(true);
-        creeper.setAI(false); // Disable AI to prevent it from moving on its own
+    private CompletableFuture<Void> startAnimation(Location playerLocation) {
+        CompletableFuture<Void> future = new CompletableFuture<>();
 
-        // Variables for animation task
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                // Schedule the entity spawning on the main thread
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        // Spawn a creeper 100 blocks in front of the player and 10 blocks above the player location in the direction the player is facing
+                        Location spawnLocation = playerLocation.clone().add(playerLocation.getDirection().multiply(100));
+                        spawnLocation.setY(playerLocation.getY() + 10);
+
+                        Creeper creeper = (Creeper) playerLocation.getWorld().spawnEntity(spawnLocation, EntityType.CREEPER);
+                        creeper.setCustomName("Delivery");
+                        creeper.setCustomNameVisible(true);
+                        creeper.setAI(false); // Disable AI to prevent it from moving on its own
+
+                        // Start the animation tasks
+                        startAnimationTasks(creeper, playerLocation, future);
+                    }
+                }.runTask(plugin);
+            }
+        }.runTaskAsynchronously(plugin);
+
+        return future;
+    }
+
+    private void startAnimationTasks(Creeper creeper, Location playerLocation, CompletableFuture<Void> future) {
+        // Move to location 1 block in front of the looking position of the player
+        playerLocation.add(playerLocation.getDirection().multiply(1));
+
         int totalTicks = 20; // Animation duration in ticks (1 second = 20 ticks)
-        final int[] ticks = {0};
+        int rangeCheckTicks = 40; // 2 seconds (40 ticks)
+        int rangeCheckInterval = 2; // Check every 2 ticks (100ms)
+        int rangeCheckCount = rangeCheckTicks / rangeCheckInterval;
+        final boolean[] removeAfterTimeout = {false};
+        final boolean[] exploded = {false};
 
         // Schedule the main animation task
         BukkitTask animationTask = new BukkitRunnable() {
+            int ticks = 0;
+
             @Override
             public void run() {
-                if (ticks[0] >= totalTicks) { // After animation duration, stop animation and explode creeper
+                if (ticks >= totalTicks) { // After animation duration, stop animation and explode creeper
                     cancel();
                     explodeCreeper(creeper);
+                    future.complete(null); // Complete the future when done
                     return;
                 }
 
-                double t = (double) ticks[0] / totalTicks; // Normalize ticks to [0, 1]
+                double t = (double) ticks / totalTicks; // Normalize ticks to [0, 1]
                 double ease = t * t * (3 - 2 * t); // Smoothstep easing function
 
                 Location currentLocation = creeper.getLocation();
-                Location targetLocation = playerLocation.clone().add(0, 0, 0); // Hover 1 block above the player
+                Location targetLocation = playerLocation.clone(); // Hover 1 block above the player
 
                 // Interpolate the position with easing
                 double x = currentLocation.getX() + (targetLocation.getX() - currentLocation.getX()) * ease;
                 double y = currentLocation.getY() + (targetLocation.getY() - currentLocation.getY()) * ease;
                 double z = currentLocation.getZ() + (targetLocation.getZ() - currentLocation.getZ()) * ease;
+                Location newLocation = new Location(playerLocation.getWorld(), x, y, z);
 
-                // Set new location without teleportation
-                creeper.teleport(new Location(playerLocation.getWorld(), x, y, z));
+                // Schedule teleportation to be done synchronously
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        creeper.teleport(newLocation);
+                    }
+                }.runTask(plugin);
 
-                ticks[0]++;
+                ticks++;
             }
-        }.runTaskTimer(plugin, 0L, 1L); // Run every tick (50ms)
+        }.runTaskTimerAsynchronously(plugin, 0L, 1L); // Run every tick (50ms)
 
-        Bukkit.broadcastMessage("Starting animation done");
+        // Schedule range check task
+        new BukkitRunnable() {
+            int ticks = 0;
+
+            @Override
+            public void run() {
+                if (removeAfterTimeout[0] || exploded[0] || !creeper.isValid()) {
+                    cancel();
+                    return;
+                }
+
+                if (creeper.getLocation().distanceSquared(playerLocation) <= 25) { // 5 blocks radius
+                    ticks++;
+                    if (ticks >= rangeCheckCount) {
+                        removeAfterTimeout[0] = true;
+                        explodeCreeper(creeper);
+                        exploded[0] = true; // Prevents repeated explosions
+                        animationTask.cancel(); // Cancel animation task if not already cancelled
+                        future.complete(null); // Complete the future when done
+                        cancel();
+                    }
+                } else {
+                    ticks = 0; // Reset ticks if creeper moves out of range
+                }
+            }
+        }.runTaskTimer(plugin, 0L, rangeCheckInterval); // Run every rangeCheckInterval ticks
     }
 
     private void explodeCreeper(Creeper creeper) {
-        if (!creeper.isDead()) {
-            creeper.getWorld().createExplosion(creeper.getLocation(), 0F, false, false); // 0F power, no fire, no block damage
-            creeper.remove();
-            // Sound effect for the explosion
-            creeper.getWorld().playSound(creeper.getLocation(), "entity.creeper.primed", 1.0F, 1.0F);
-            // Particle effect for the explosion
-            creeper.getWorld().spawnParticle(Particle.EXPLOSION, creeper.getLocation(), 1);
-        }
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (!creeper.isDead()) {
+                    creeper.getWorld().createExplosion(creeper.getLocation(), 0F, false, false); // 0F power, no fire, no block damage
+                    creeper.remove();
+                    // Sound effect for the explosion
+                    creeper.getWorld().playSound(creeper.getLocation(), "entity.creeper.primed", 1.0F, 1.0F);
+                    // Particle effect for the explosion
+                    creeper.getWorld().spawnParticle(Particle.EXPLOSION, creeper.getLocation(), 1);
+                }
+            }
+        }.runTask(plugin);
     }
-
+    private void runAsync(Runnable runnable) {
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, runnable);
+    }
 }
